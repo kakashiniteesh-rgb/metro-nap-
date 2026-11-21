@@ -15,15 +15,30 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
-      - name: Create Capacitor project
+      - name: Create Capacitor project with background GPS + alarm plugins
         run: |
           mkdir www && cp index.html www/
           npm init -y
           npm install @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7 \
             @capacitor/local-notifications@7 @capacitor-community/background-geolocation
-          npx cap init "Metro Wake-up" com.metrowakeup.app --web-dir www
+          npx cap init "Metro Nap" com.metrowakeup.app --web-dir www
           npx cap add android
           npx cap sync android
+      - name: Make app icon from the logo in index.html
+        run: |
+          pip install pillow
+          python3 - <<'PY'
+          import re,base64,io,os
+          from PIL import Image
+          s=open('index.html',encoding='utf-8').read()
+          m=re.search(r'id="logoBig" src="data:image/png;base64,([^"]+)"',s)
+          im=Image.open(io.BytesIO(base64.b64decode(m.group(1)))).convert('RGB').resize((1024,1024))
+          os.makedirs('assets',exist_ok=True)
+          im.save('assets/icon-only.png')
+          Image.new('RGB',(1024,1024),'black').save('assets/icon-background.png')
+          fg=Image.new('RGB',(1024,1024),'black');fg.paste(im.resize((700,700)),(162,162));fg.save('assets/icon-foreground.png')
+          PY
+          npx @capacitor/assets@3 generate --android
       - name: Add permissions
         run: |
           M=android/app/src/main/AndroidManifest.xml
@@ -35,6 +50,7 @@ jobs:
             P="$P    <uses-permission android:name=\"android.permission.$perm\"/>\n"
           done
           sed -i "s#</manifest>#$P</manifest>#" $M
+          cat $M
       - name: Build debug APK
         working-directory: android
         run: ./gradlew assembleDebug
@@ -42,3 +58,4 @@ jobs:
         with:
           name: metro-wakeup-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
+          
