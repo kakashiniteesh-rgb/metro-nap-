@@ -366,6 +366,7 @@ main{padding:12px 14px 40px!important}
 }
 .dmrcbadge{display:inline-flex;align-items:center;gap:8px;margin:0 0 10px;padding:5px 12px 5px 6px;border:1px solid var(--line);border-radius:999px;font-size:13px;font-weight:600;color:var(--mute)}.dmrcbadge img{width:22px;height:22px;border-radius:50%}
 </style>
+<script>window.addEventListener("error",function(e){try{var b=document.getElementById("errbar");if(!b){b=document.createElement("div");b.id="errbar";b.style.cssText="position:fixed;left:8px;right:8px;bottom:8px;z-index:99999;background:#b00020;color:#fff;font:12px/1.4 monospace;padding:8px 10px;border-radius:10px;max-height:30vh;overflow:auto";document.body.appendChild(b)}b.textContent="Error: "+(e.message||"unknown")+" (line "+(e.lineno||"?")+")"}catch(x){}});</script>
 </head>
 <body>
 
@@ -456,7 +457,7 @@ function fd(k){return k<1?Math.round(k*100)*10+" m":k.toFixed(1)+" km"}
 var NETWORK_LINES=[
  {id:'red',name:'RED LINE',color:'#ef5350',stations:['Rithala','Rohini West','Rohini East','Pitampura','Kohat Enclave','Netaji Subhash Place','Keshav Puram','Kanhaiya Nagar','Inderlok','Shastri Nagar','Pratap Nagar','Pulbangash','Tis Hazari','Kashmere Gate','Shastri Park','Seelampur','Welcome','Shahdara','Mansarovar Park','Jhilmil','Dilshad Garden','Shaheed Nagar','Raj Bagh','Major Mohit Sharma Rajendra Nagar','Shyam Park','Mohan Nagar','Arthala','Hindon River','Shaheed Sthal']},
  {id:'yellow',name:'YELLOW LINE',color:'#e7c94b',stations:['Samaypur Badli','Rohini Sector 18-19','Haiderpur Badli Mor','Jahangirpuri','Adarsh Nagar','Azadpur','Model Town','GTB Nagar','Vishwavidyalaya','Vidhan Sabha','Civil Lines','Kashmere Gate','Chandni Chowk','Chawri Bazar','New Delhi','Rajiv Chowk','Patel Chowk','Central Secretariat','Seva Teerth','Lok Kalyan Marg','Jor Bagh','Dilli Haat - INA','AIIMS','Green Park','Hauz Khas','Malviya Nagar','Saket','Qutub Minar','Chhatarpur','Sultanpur','Ghitorni','Arjan Garh','Guru Dronacharya','Sikandarpur','MG Road','IFFCO Chowk','Millennium City Centre Gurugram']},
- {id:'blue',name:'BLUE LINE',color:'#4d91ff',stations:['Dwarka Sector 21','Dwarka Sector 8','Dwarka Sector 9','Dwarka Sector 10','Dwarka Sector 11','Dwarka Sector 12','Dwarka Sector 13','Dwarka Sector 14','Dwarka','Dwarka Mor','Nawada','Uttam Nagar West','Uttam Nagar East','Janakpuri West','Janakpuri East','Tilak Nagar','Subhash Nagar','Tagore Garden','Rajouri Garden','Ramesh Nagar','Moti Nagar','Kirti Nagar','Shadipur','Patel Nagar','Rajendra Place','Karol Bagh','Jhandewalan','RK Ashram Marg','Rajiv Chowk','Barakhamba Road','Mandi House','Supreme Court','Indraprastha','Yamuna Bank','Akshardham','Mayur Vihar-I','Mayur Vihar Extension','New Ashok Nagar','Noida Sector 15','Noida Sector 16','Noida Sector 18','Botanical Garden','Golf Course','Noida City Centre','Noida Sector 34','Noida Sector 52','Noida Sector 61','Noida Sector 59','Noida Sector 62','Noida Electronic City']},
+ {id:'blue',name:'BLUE LINE',color:'#4d91ff',stations:['Dwarka Sector 21','Dwarka Sector 8','Dwarka Sector 9','Dwarka Sector 10','Dwarka Sector 11','Dwarka Sector 12','Dwarka Sector 13','Dwarka Sector 14','Dwarka','Dwarka Mor','Nawada','Uttam Nagar West','Uttam Nagar East','Janakpuri East','Tilak Nagar','Subhash Nagar','Tagore Garden','Rajouri Garden','Ramesh Nagar','Moti Nagar','Kirti Nagar','Shadipur','Patel Nagar','Rajendra Place','Karol Bagh','Jhandewalan','RK Ashram Marg','Rajiv Chowk','Barakhamba Road','Mandi House','Supreme Court','Indraprastha','Yamuna Bank','Akshardham','Mayur Vihar-I','New Ashok Nagar','Noida Sector 15','Noida Sector 16','Noida Sector 18','Botanical Garden','Golf Course','Noida City Centre','Noida Sector 34','Noida Sector 52','Noida Sector 61','Noida Sector 59','Noida Sector 62','Noida Electronic City']},
  {id:'blue-branch',name:'BLUE LINE · VAISHALI BRANCH',color:'#4d91ff',stations:['Yamuna Bank','Laxmi Nagar','Nirman Vihar','Preet Vihar','Karkarduma','Anand Vihar ISBT','Kaushambi','Vaishali']},
  {id:'green',name:'GREEN LINE',color:'#48bd86',stations:['Inderlok','Ashok Park Main','Punjabi Bagh','Punjabi Bagh West','Shivaji Park','Madipur','Paschim Vihar East','Paschim Vihar West','Peeragarhi','Udyog Nagar','Maharaja Surajmal Stadium','Nangloi','Nangloi Railway Station','Rajdhani Park','Mundka','Mundka Industrial Area','Ghevra','Tikri Kalan','Tikri Border','Pandit Shree Ram Sharma','Bahadurgarh City','Brigadier Hoshiyar Singh']},
  {id:'green-branch',name:'GREEN LINE · KIRTI NAGAR BRANCH',color:'#48bd86',stations:['Kirti Nagar','Satguru Ram Singh Marg','Ashok Park Main']},
@@ -468,7 +469,7 @@ var NETWORK_LINES=[
  {id:'grey',name:'GREY LINE',color:'#9aa5b5',stations:['Dwarka','Nangli','Najafgarh','Dhansa Bus Stand']},
  {id:'airport',name:'AIRPORT EXPRESS',color:'#f0a65a',stations:['New Delhi','Shivaji Stadium','Dhaula Kuan','Delhi Aerocity','IGI Airport','Dwarka Sector 21','Yashobhoomi Dwarka Sector 25']}
 ];
-var ALIASES={'Huda City Centre':'Millennium City Centre Gurugram','Millennium City Centre':'Millennium City Centre Gurugram','Anand Vihar':'Anand Vihar ISBT','IP Extension':'IP Extension','I.P. Extension':'IP Extension','R. K. Puram':'RK Puram','Dilli Haat - INA':'Dilli Haat - INA','INA':'Dilli Haat - INA','Terminal 1-IGI Airport':'Terminal 1-IGI Airport','Delhi Cantt.':'Delhi Cantonment','Shree Ram Mandir Mayur Vihar':'Shree Ram Mayur Vihar Mandir','Maujpur':'Maujpur-Babarpur','Shaheed Sthal (New Bus Adda)':'Shaheed Sthal','Yashobhoomi Dwarka Sector-25':'Yashobhoomi Dwarka Sector 25','Hauzkhas':'Hauz Khas','Sikanderpur':'Sikandarpur','Qutab Minar':'Qutub Minar','Jafrabad':'Jafrabad','Jaffrabad':'Jafrabad','Dabri Mor - Janakpuri South':'Dabri Mor','East Vinod Nagar - Mayur Vihar-II':'East Vinod Nagar-Mayur Vihar-II','Guru Tegh Bahadur Nagar':'GTB Nagar','IIT':'IIT Delhi','Indira Gandhi International Airport':'IGI Airport','Jawaharlal Nehru Stadium':'JLN Stadium','Maujpur - Babarpur':'Maujpur-Babarpur','Ramakrishna Ashram Marg':'RK Ashram Marg','Trilokpuri Sanjay Lake':'Trilokpuri-Sanjay Lake'};
+var ALIASES={'Huda City Centre':'Millennium City Centre Gurugram','Millennium City Centre':'Millennium City Centre Gurugram','Anand Vihar':'Anand Vihar ISBT','IP Extension':'IP Extension','I.P. Extension':'IP Extension','R. K. Puram':'RK Puram','Dilli Haat - INA':'Dilli Haat - INA','INA':'Dilli Haat - INA','Terminal 1-IGI Airport':'Terminal 1-IGI Airport','Delhi Cantt.':'Delhi Cantonment','Shree Ram Mandir Mayur Vihar':'Shree Ram Mayur Vihar Mandir','Maujpur':'Maujpur-Babarpur','Shaheed Sthal (New Bus Adda)':'Shaheed Sthal','Yashobhoomi Dwarka Sector-25':'Yashobhoomi Dwarka Sector 25','Hauzkhas':'Hauz Khas','Sikanderpur':'Sikandarpur','Qutab Minar':'Qutub Minar','Jafrabad':'Jafrabad'};
 function canon(n){var v=(n||'').trim();return ALIASES[v]||v}
 var coordByName={};S.forEach(function(st){coordByName[canon(st[0])]={lat:st[1],lng:st[2]}});
 X.split(';').forEach(function(row){var a=row.split(',');if(a.length>=3)coordByName[canon(a[0])] = coordByName[canon(a[0])]||{lat:+a[1],lng:+a[2]}});
@@ -645,8 +646,8 @@ $("snd").addEventListener("change",function(){try{localStorage.setItem("sound",$
 
 /* Native app (Capacitor): background GPS + alarm notifications. Inert in a normal browser. */
 var NATIVE=!!(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform());
-var BG=NATIVE?Capacitor.registerPlugin("BackgroundGeolocation"):null;
-var LN=(NATIVE&&Capacitor.Plugins)?Capacitor.Plugins.LocalNotifications:null;
+var BG=null;try{if(NATIVE)BG=(typeof Capacitor.registerPlugin==="function")?Capacitor.registerPlugin("BackgroundGeolocation"):((Capacitor.Plugins&&Capacitor.Plugins.BackgroundGeolocation)||null)}catch(e){BG=null}
+var LN=null;try{LN=(NATIVE&&Capacitor.Plugins)?(Capacitor.Plugins.LocalNotifications||null):null}catch(e){LN=null}
 var wid=null,NID=9000,NCOUNT=20;
 function onPos(lat,lng,acc,speed){
   pos={lat:lat,lng:lng};
@@ -671,18 +672,26 @@ function startGps(){
   $("gps").textContent="Finding your location\u2026";
   if(LN){LN.requestPermissions().catch(function(){});LN.createChannel({id:"alarm",name:"Arrival alarm",description:"Wakes you before your stop",importance:5,visibility:1,vibration:true}).catch(function(){})}
   var bg=function(){
+    if(!BG){wid=null;return startWebGps()}
     BG.addWatcher({backgroundTitle:"Metro Nap is tracking your trip",backgroundMessage:"You will be woken before your stop.",requestPermissions:true,stale:false,distanceFilter:20},function(l,err){
       if(err){if(err.code==="NOT_AUTHORIZED"){$("gps").textContent="Location permission needed. Choose Allow all the time.";pLoc="denied";wid=null;permUI()}return}
       if(l)onPos(l.latitude,l.longitude,l.accuracy,l.speed);
     }).then(function(id){wid=id}).catch(function(){wid=null;startWebGps()});
     setTimeout(function(){if(!pos)startWebGps()},15000);
   };
-  if(!navigator.geolocation)return bg();
-  navigator.geolocation.getCurrentPosition(function(p){onPos(p.coords.latitude,p.coords.longitude,p.coords.accuracy,p.coords.speed);bg()},
-    function(e){if(e.code===1){wid=null;pLoc="denied";$("gps").textContent="Location is blocked. Tap Settings and allow it.";permUI()}else bg()},
-    {enableHighAccuracy:true,timeout:12000,maximumAge:0});
+  var fix=function(){
+    if(!navigator.geolocation)return bg();
+    navigator.geolocation.getCurrentPosition(function(p){onPos(p.coords.latitude,p.coords.longitude,p.coords.accuracy,p.coords.speed);bg()},
+      function(e){if(e.code===1){wid=null;pLoc="denied";$("gps").textContent="Location is blocked. Tap Settings and allow it.";permUI()}else bg()},
+      {enableHighAccuracy:true,timeout:12000,maximumAge:0});
+  };
+  var G=Capacitor.Plugins&&Capacitor.Plugins.Geolocation;
+  if(G&&G.requestPermissions)G.requestPermissions().then(function(r){
+    if(r&&r.location==="denied"){wid=null;pLoc="denied";$("gps").textContent="Location is blocked. Tap Settings and allow it.";permUI()}else fix()
+  }).catch(fix);
+  else fix();
 }
-function stopGps(){if(NATIVE&&wid&&wid!=="pending"){BG.removeWatcher({id:wid}).catch(function(){});wid=null;pos=null;$("gps").textContent=""}}
+function stopGps(){if(NATIVE&&BG&&wid&&wid!=="pending"){BG.removeWatcher({id:wid}).catch(function(){});wid=null;pos=null;$("gps").textContent=""}}
 
 /* Permission card */
 var pLoc=null,pNot=null;
@@ -709,13 +718,13 @@ function permCheck(){
   permUI();
 }
 $("b-loc").addEventListener("click",function(){
-  if(pLoc==="denied"){if(NATIVE)BG.openSettings();return}
+  if(pLoc==="denied"){if(NATIVE&&BG)BG.openSettings();return}
   unlock();
   if(NATIVE){peekUntil=Date.now()+60000;setTimeout(render,61000);startGps();return}
   if(navigator.geolocation)navigator.geolocation.getCurrentPosition(function(){pLoc="granted";permUI();startGps()},function(e){if(e.code===1){pLoc="denied";permUI()}},{enableHighAccuracy:true,timeout:15000});
 });
 $("b-not").addEventListener("click",function(){
-  if(pNot==="denied"){if(NATIVE)BG.openSettings();return}
+  if(pNot==="denied"){if(NATIVE&&BG)BG.openSettings();return}
   if(LN)LN.requestPermissions().then(function(r){pNot=r.display==="granted"?"granted":"denied";permUI()}).catch(function(){});
 });
 
@@ -770,8 +779,6 @@ $("f").onsubmit=function(e){
   t.rad=parseFloat($("rad").value);t.snd=$("snd").value;t.on=true;
   trips.push(t);save();$("st").value="";$("clat").value="";$("clng").value="";
   startGps();render();check();
-  try{if(document.activeElement)document.activeElement.blur()}catch(e){}
-  setTimeout(function(){var w=$("wake-list");if(w&&w.scrollIntoView)w.scrollIntoView({behavior:"smooth",block:"start"})},150);
 };
 
 window.__m={eta:eta,plan:function(){planSig="";renderPlan()},pos:function(){return pos},near:nearestNetworkStation,trips:function(){return trips},gps:function(){unlock();if(NATIVE){peekUntil=Date.now()+60000;setTimeout(render,61000)}startGps()}};
@@ -824,8 +831,7 @@ var max=function(){return d.documentElement.scrollHeight-innerHeight};
 if(smooth){addEventListener('wheel',function(e){if(e.ctrlKey||e.target.closest('select'))return;e.preventDefault();tgt=Math.max(0,Math.min(max(),tgt+e.deltaY*(e.deltaMode?30:1)));go()},{passive:false});
  addEventListener('scroll',function(){if(!anim){cur=tgt=prev=scrollY}});
  d.addEventListener('click',function(e){var a=e.target.closest('a[href^="#"]');if(!a)return;var el=d.querySelector(a.getAttribute('href'));if(el){e.preventDefault();tgt=Math.max(0,Math.min(max(),el.getBoundingClientRect().top+scrollY-90));go()}})}
-else{addEventListener('scroll',function(){art.style.setProperty('--py',(-scrollY*.18)+'px')},{passive:true});
- d.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href^="#"]');if(!a)return;var id=a.getAttribute('href');if(!id||id.length<2)return;var el=d.querySelector(id);if(el){e.preventDefault();scrollTo({top:Math.max(0,el.getBoundingClientRect().top+scrollY-24),behavior:'smooth'})}})}
+else addEventListener('scroll',function(){art.style.setProperty('--py',(-scrollY*.18)+'px')},{passive:true});
 /* location + journey */
 d.getElementById('locBtn').onclick=function(){if(window.__m)window.__m.gps();var el=d.getElementById('journey');var t=el.getBoundingClientRect().top+scrollY-90;if(smooth){tgt=t;go()}else scrollTo({top:t,behavior:'smooth'})};
 function km(k){return k<1?Math.round(k*1000)+' m':k.toFixed(1)+' km'}
