@@ -58,4 +58,3 @@ jobs:
         with:
           name: metro-wakeup-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
-          
