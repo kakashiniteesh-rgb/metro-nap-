@@ -1,24 +1,20 @@
-# Delhi Metro Nap
+# Metro Nap
 
-Sleep through your metro ride and get woken before your stop.
+Wake-up alarm for Delhi Metro rides. Location and stops stay on the phone: no account, no server.
 
-## Put it on GitHub
-1. Create a new repo on github.com and upload everything in this folder (keep the `.github` folder).
-2. Repo **Settings → Pages → Source: GitHub Actions**. The site deploys at `https://<you>.github.io/<repo>/`.
-3. Open that link in Chrome → ⋮ → **Add to Home screen**.
+## Build the app
+1. Keep this repository **private** (Settings > General > Danger zone > Change visibility).
+2. Actions > "Build Metro Nap (signed release APK)" > Run workflow.
+3. Download `Metro-Nap-APK` from the finished run, unzip, install `Metro-Nap.apk`.
 
-## Get an Android APK
-Repo **Actions → Build Android APK → Run workflow**. When it finishes, download
-`metro-wakeup-apk` from the run page, unzip it, and install `app-debug.apk`
-(allow "install unknown apps" on your phone).
+## Signing key
+The first build creates a signing key and saves it. Download `KEEP-PRIVATE-signing-key` from the run
+and store it somewhere safe: updates must always be signed with the same key.
+Optional: add repository secrets `KEYSTORE_B64` (base64 of your .jks) and `KEY_PASS` to use your own key.
 
-## Make it work with the screen off
-The APK build includes native background GPS (a foreground service with a
-persistent notification) and alarm notifications. After installing:
-1. Open the app, allow **location**, then in phone Settings → Apps → Metro Nap →
-   Permissions → Location choose **Allow all the time**.
-2. Allow **notifications**, and in Settings → Battery set the app to **Unrestricted**
-   (phone makers like Xiaomi/Samsung/Oppo kill background apps otherwise).
-3. Add your destination, lock the phone, and do a short real-world test before relying on it.
+## First run on the phone
+Allow location, then Settings > Apps > Metro Nap > Permissions > Location > "Allow all the time".
+Allow notifications, set Battery to "No restrictions", and enable Autostart on Xiaomi phones.
+In the app, open the gear icon and allow "Display over other apps".
 
-The plain website (GitHub Pages) cannot do this: browsers pause pages when the screen is off.
+Privacy policy: privacy.html
