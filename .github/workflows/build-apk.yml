@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build Metro Nap (signed release APK)
 on:
   workflow_dispatch:
   push:
@@ -7,6 +7,9 @@ jobs:
   apk:
     runs-on: ubuntu-latest
     steps:
+      - name: Warn if repository is public
+        if: ${{ github.event.repository.private == false }}
+        run: echo "::warning::This repository is PUBLIC, so anyone can read your source code and data. Make it private in Settings."
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
@@ -15,13 +18,15 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
-      - name: Create Capacitor project with background GPS + alarm plugins
+      - name: Create Capacitor project
         run: |
           mkdir www && cp index.html www/
           npm init -y
           npm install @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7 \
-            @capacitor/local-notifications@7 @capacitor/geolocation@7 @capacitor-community/background-geolocation
-          npx cap init "Metro Nap" com.metrowakeup.app --web-dir www
+            @capacitor/local-notifications@7 @capacitor/geolocation@7 @capacitor-community/background-geolocation@1
+          npx cap init "Metro Nap" com.metronap.app --web-dir www
+          ls capacitor.config.*
+          node -e "const fs=require('fs'),f='capacitor.config.json',c=JSON.parse(fs.readFileSync(f));c.android=Object.assign(c.android||{},{allowMixedContent:false,webContentsDebuggingEnabled:false});c.server=Object.assign(c.server||{},{androidScheme:'https'});fs.writeFileSync(f,JSON.stringify(c,null,2))"
           npx cap add android
           npx cap sync android
       - name: Make app icon from the logo in index.html
@@ -31,7 +36,8 @@ jobs:
           import re,base64,io,os
           from PIL import Image
           s=open('index.html',encoding='utf-8').read()
-          m=re.search(r'id="logoBig" src="data:image/png;base64,([^"]+)"',s)
+          m=re.search(r'<script type="text/plain" id="appicon">([A-Za-z0-9+/=]+)</script>',s) or re.search(r'<img[^>]*id="logoBig"[^>]*src="data:image/[a-z]+;base64,([^"]+)"',s)
+          assert m,'logoBig image not found in index.html'
           im=Image.open(io.BytesIO(base64.b64decode(m.group(1)))).convert('RGB').resize((1024,1024))
           os.makedirs('assets',exist_ok=True)
           im.save('assets/icon-only.png')
@@ -39,22 +45,282 @@ jobs:
           fg=Image.new('RGB',(1024,1024),'black');fg.paste(im.resize((700,700)),(162,162));fg.save('assets/icon-foreground.png')
           PY
           npx @capacitor/assets@3 generate --android
-      - name: Add permissions
+      - name: Add native alarm (wakes screen, pauses other audio)
+        run: |
+          D=android/app/src/main/java/com/metronap/app
+          mkdir -p $D
+          cat > $D/AlarmPlugin.java <<'JAVA'
+          package com.metronap.app;
+
+          import android.app.Notification;
+          import android.app.NotificationChannel;
+          import android.app.NotificationManager;
+          import android.app.PendingIntent;
+          import android.content.Context;
+          import android.content.Intent;
+          import android.media.AudioAttributes;
+          import android.media.AudioFocusRequest;
+          import android.media.AudioManager;
+          import android.media.MediaPlayer;
+          import android.media.RingtoneManager;
+          import android.net.Uri;
+          import android.os.Build;
+          import android.os.PowerManager;
+          import android.provider.Settings;
+          import android.view.WindowManager;
+          import android.os.VibrationEffect;
+          import android.os.Vibrator;
+          import androidx.core.app.NotificationCompat;
+          import com.getcapacitor.JSObject;
+          import com.getcapacitor.Plugin;
+          import com.getcapacitor.PluginCall;
+          import com.getcapacitor.PluginMethod;
+          import com.getcapacitor.annotation.CapacitorPlugin;
+
+          @CapacitorPlugin(name = "MetroAlarm")
+          public class AlarmPlugin extends Plugin {
+              private static final String CH = "metro_alarm_full";
+              private static final int NID = 7701;
+              private MediaPlayer player;
+              private AudioFocusRequest focus;
+              private Vibrator vib;
+
+              @PluginMethod
+              public void start(PluginCall call) {
+                  Context c = getContext();
+                  String title = call.getString("title", "Wake up!");
+                  String body = call.getString("body", "");
+                  stopAll();
+                  try {
+                      NotificationManager nm = (NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE);
+                      if (Build.VERSION.SDK_INT >= 26 && nm.getNotificationChannel(CH) == null) {
+                          NotificationChannel ch = new NotificationChannel(CH, "Arrival alarm (full screen)", NotificationManager.IMPORTANCE_HIGH);
+                          ch.setSound(null, null);
+                          ch.enableVibration(false);
+                          ch.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+                          nm.createNotificationChannel(ch);
+                      }
+                      Intent open = new Intent(c, MainActivity.class);
+                      open.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                      PendingIntent pi = PendingIntent.getActivity(c, 77, open, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+                      Notification n = new NotificationCompat.Builder(c, CH)
+                          .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
+                          .setContentTitle(title)
+                          .setContentText(body)
+                          .setCategory(NotificationCompat.CATEGORY_ALARM)
+                          .setPriority(NotificationCompat.PRIORITY_MAX)
+                          .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                          .setOngoing(true)
+                          .setAutoCancel(false)
+                          .setContentIntent(pi)
+                          .setFullScreenIntent(pi, true)
+                          .build();
+                      nm.notify(NID, n);
+                  } catch (Exception e) { }
+                  try {
+                      if (Build.VERSION.SDK_INT < 23 || Settings.canDrawOverlays(c)) {
+                          Intent up = new Intent(c, MainActivity.class);
+                          up.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                          c.startActivity(up);
+                      }
+                      if (getActivity() != null) {
+                          getActivity().runOnUiThread(new Runnable() {
+                              public void run() { getActivity().getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON); }
+                          });
+                      }
+                  } catch (Exception e) { }
+                  try {
+                      AudioManager am = (AudioManager) c.getSystemService(Context.AUDIO_SERVICE);
+                      AudioAttributes aa = new AudioAttributes.Builder()
+                          .setUsage(AudioAttributes.USAGE_ALARM)
+                          .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                          .build();
+                      if (Build.VERSION.SDK_INT >= 26) {
+                          focus = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN).setAudioAttributes(aa).build();
+                          am.requestAudioFocus(focus);
+                      } else {
+                          am.requestAudioFocus(null, AudioManager.STREAM_ALARM, AudioManager.AUDIOFOCUS_GAIN);
+                      }
+                      am.setStreamVolume(AudioManager.STREAM_ALARM, am.getStreamMaxVolume(AudioManager.STREAM_ALARM), 0);
+                      Uri uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+                      if (uri == null) uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
+                      player = new MediaPlayer();
+                      player.setAudioAttributes(aa);
+                      player.setDataSource(c, uri);
+                      player.setLooping(true);
+                      player.prepare();
+                      player.start();
+                  } catch (Exception e) { }
+                  try {
+                      vib = (Vibrator) c.getSystemService(Context.VIBRATOR_SERVICE);
+                      long[] pat = new long[]{0, 800, 600};
+                      if (Build.VERSION.SDK_INT >= 26) vib.vibrate(VibrationEffect.createWaveform(pat, 0));
+                      else vib.vibrate(pat, 0);
+                  } catch (Exception e) { }
+                  call.resolve();
+              }
+
+              @PluginMethod
+              public void stop(PluginCall call) {
+                  stopAll();
+                  call.resolve();
+              }
+
+              private void stopAll() {
+                  Context c = getContext();
+                  try {
+                      if (getActivity() != null) {
+                          getActivity().runOnUiThread(new Runnable() {
+                              public void run() { getActivity().getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON); }
+                          });
+                      }
+                  } catch (Exception e) { }
+                  try { if (player != null) { player.stop(); player.release(); } } catch (Exception e) { }
+                  player = null;
+                  try { if (vib != null) vib.cancel(); } catch (Exception e) { }
+                  try {
+                      AudioManager am = (AudioManager) c.getSystemService(Context.AUDIO_SERVICE);
+                      if (Build.VERSION.SDK_INT >= 26 && focus != null) am.abandonAudioFocusRequest(focus);
+                      focus = null;
+                  } catch (Exception e) { }
+                  try {
+                      ((NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE)).cancel(NID);
+                  } catch (Exception e) { }
+              }
+
+              @PluginMethod
+              public void checkPerms(PluginCall call) {
+                  Context c = getContext();
+                  JSObject r = new JSObject();
+                  r.put("overlay", Build.VERSION.SDK_INT < 23 || Settings.canDrawOverlays(c));
+                  boolean fs = true;
+                  if (Build.VERSION.SDK_INT >= 34) {
+                      fs = ((NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE)).canUseFullScreenIntent();
+                  }
+                  r.put("fullScreen", fs);
+                  boolean bat = true;
+                  if (Build.VERSION.SDK_INT >= 23) {
+                      PowerManager pm = (PowerManager) c.getSystemService(Context.POWER_SERVICE);
+                      bat = pm.isIgnoringBatteryOptimizations(c.getPackageName());
+                  }
+                  r.put("battery", bat);
+                  call.resolve(r);
+              }
+
+              private void openSettings(String action, boolean withPkg) {
+                  Context c = getContext();
+                  try {
+                      Intent i = new Intent(action);
+                      if (withPkg) i.setData(Uri.parse("package:" + c.getPackageName()));
+                      i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                      c.startActivity(i);
+                  } catch (Exception e) {
+                      try {
+                          Intent i = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + c.getPackageName()));
+                          i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                          c.startActivity(i);
+                      } catch (Exception x) { }
+                  }
+              }
+
+              @PluginMethod
+              public void openOverlaySettings(PluginCall call) { openSettings(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, true); call.resolve(); }
+
+              @PluginMethod
+              public void openFullScreenSettings(PluginCall call) {
+                  if (Build.VERSION.SDK_INT >= 34) openSettings("android.settings.MANAGE_APP_USE_FULL_SCREEN_INTENT", true);
+                  else openSettings(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, true);
+                  call.resolve();
+              }
+
+              @PluginMethod
+              public void openBatterySettings(PluginCall call) { openSettings(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS, false); call.resolve(); }
+
+              @PluginMethod
+              public void openAppSettings(PluginCall call) { openSettings(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, true); call.resolve(); }
+          }
+          JAVA
+          cat > $D/MainActivity.java <<'JAVA'
+          package com.metronap.app;
+
+          import android.os.Build;
+          import android.os.Bundle;
+          import android.view.WindowManager;
+          import com.getcapacitor.BridgeActivity;
+
+          public class MainActivity extends BridgeActivity {
+              @Override
+              public void onCreate(Bundle savedInstanceState) {
+                  registerPlugin(AlarmPlugin.class);
+                  super.onCreate(savedInstanceState);
+                  if (Build.VERSION.SDK_INT >= 27) {
+                      setShowWhenLocked(true);
+                      setTurnScreenOn(true);
+                  } else {
+                      getWindow().addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
+                  }
+              }
+          }
+          JAVA
+      - name: Permissions, hardening and version
         run: |
           M=android/app/src/main/AndroidManifest.xml
           P=""
           for perm in ACCESS_FINE_LOCATION ACCESS_COARSE_LOCATION ACCESS_BACKGROUND_LOCATION \
                       FOREGROUND_SERVICE FOREGROUND_SERVICE_LOCATION POST_NOTIFICATIONS \
                       SCHEDULE_EXACT_ALARM USE_EXACT_ALARM USE_FULL_SCREEN_INTENT \
-                      WAKE_LOCK VIBRATE; do
+                      WAKE_LOCK VIBRATE SYSTEM_ALERT_WINDOW; do
             P="$P    <uses-permission android:name=\"android.permission.$perm\"/>\n"
           done
           sed -i "s#</manifest>#$P</manifest>#" $M
+          sed -i 's/android:allowBackup="true"/android:allowBackup="false"/' $M
+          grep -q usesCleartextTraffic $M || sed -i 's#<application#<application android:usesCleartextTraffic="false"#' $M
+          G=android/app/build.gradle
+          sed -i 's/versionName "1.0"/versionName "1.0.0"/' $G
+          printf '\nandroid {\n    lint {\n        checkReleaseBuilds false\n        abortOnError false\n    }\n}\n' >> $G
           cat $M
-      - name: Build debug APK
+      - name: Restore signing key
+        uses: actions/cache@v4
+        with:
+          path: signing
+          key: metronap-signing-v1
+      - name: Prepare signing key
+        env:
+          KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
+          KEY_PASS: ${{ secrets.KEY_PASS }}
+        run: |
+          mkdir -p signing
+          if [ -n "$KEYSTORE_B64" ] && [ -n "$KEY_PASS" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > signing/release.jks
+            printf '%s' "$KEY_PASS" > signing/pass.txt
+            echo "Using the signing key from repository secrets"
+          elif [ -f signing/release.jks ] && [ -f signing/pass.txt ]; then
+            echo "Using the saved signing key"
+          else
+            openssl rand -hex 16 > signing/pass.txt
+            keytool -genkeypair -keystore signing/release.jks -storetype PKCS12 -alias metronap -keyalg RSA -keysize 2048 -validity 10000 -storepass "$(cat signing/pass.txt)" -keypass "$(cat signing/pass.txt)" -dname "CN=Metro Nap, O=Metro Nap, C=IN"
+            echo "Created a new signing key"
+          fi
+      - name: Build release APK
         working-directory: android
-        run: ./gradlew assembleDebug
+        run: ./gradlew assembleRelease
+      - name: Align and sign
+        run: |
+          BT=$(ls -d "${ANDROID_HOME:-$ANDROID_SDK_ROOT}"/build-tools/* | sort -V | tail -1)
+          ls android/app/build/outputs/apk/release/
+          "$BT/zipalign" -p -f 4 android/app/build/outputs/apk/release/app-release-unsigned.apk aligned.apk
+          "$BT/apksigner" sign --ks signing/release.jks --ks-pass file:signing/pass.txt --key-pass file:signing/pass.txt --out Metro-Nap.apk aligned.apk
+          "$BT/apksigner" verify --verbose Metro-Nap.apk | head -4
+          sha256sum Metro-Nap.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: metro-wakeup-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: Metro-Nap-APK
+          path: Metro-Nap.apk
+      - name: Back up signing key (private repositories only)
+        if: ${{ github.event.repository.private == true }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: KEEP-PRIVATE-signing-key
+          path: signing
+          retention-days: 90
+          
