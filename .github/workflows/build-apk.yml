@@ -20,6 +20,7 @@ jobs:
           java-version: 21
       - name: Create Capacitor project
         run: |
+          trap 'echo "::error::Step failed at: $BASH_COMMAND"' ERR
           mkdir www && cp index.html www/
           npm init -y
           npm install @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7 \
@@ -37,6 +38,7 @@ jobs:
           npx cap sync android
       - name: Make app icon from the logo in index.html
         run: |
+          trap 'echo "::error::Step failed at: $BASH_COMMAND"' ERR
           pip install pillow
           python3 - <<'PY'
           import re,base64,io,os
@@ -74,6 +76,7 @@ jobs:
           npx @capacitor/assets@3 generate --android
       - name: Add native alarm (wakes screen, pauses other audio)
         run: |
+          trap 'echo "::error::Step failed at: $BASH_COMMAND"' ERR
           D=android/app/src/main/java/com/metronap/app
           mkdir -p $D
           cat > $D/AlarmPlugin.java <<'JAVA'
@@ -291,6 +294,7 @@ jobs:
           JAVA
       - name: Permissions, hardening and version
         run: |
+          trap 'echo "::error::Step failed at: $BASH_COMMAND"' ERR
           M=android/app/src/main/AndroidManifest.xml
           P=""
           for perm in ACCESS_FINE_LOCATION ACCESS_COARSE_LOCATION ACCESS_BACKGROUND_LOCATION \
@@ -316,6 +320,7 @@ jobs:
           KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
           KEY_PASS: ${{ secrets.KEY_PASS }}
         run: |
+          trap 'echo "::error::Step failed at: $BASH_COMMAND"' ERR
           mkdir -p signing
           if [ -n "$KEYSTORE_B64" ] && [ -n "$KEY_PASS" ]; then
             echo "$KEYSTORE_B64" | base64 -d > signing/release.jks
@@ -330,13 +335,22 @@ jobs:
           fi
       - name: Build release APK
         working-directory: android
-        run: ./gradlew assembleRelease
+        run: |
+          set -o pipefail
+          ./gradlew assembleRelease --console=plain 2>&1 | tee ../gradle.log || {
+            echo "::error::Gradle build failed: $(grep -m4 -E 'error:|What went wrong|FAILED|Execution failed' -A2 ../gradle.log | tr '\n' ' ' | cut -c1-1200)"
+            exit 1
+          }
       - name: Align and sign
         run: |
           BT=$(ls -d "${ANDROID_HOME:-$ANDROID_SDK_ROOT}"/build-tools/* | sort -V | tail -1)
-          ls android/app/build/outputs/apk/release/
-          "$BT/zipalign" -p -f 4 android/app/build/outputs/apk/release/app-release-unsigned.apk aligned.apk
-          "$BT/apksigner" sign --ks signing/release.jks --ks-pass file:signing/pass.txt --key-pass file:signing/pass.txt --out Metro-Nap.apk aligned.apk
+          echo "build-tools: $BT"
+          APK=$(find android/app/build/outputs -name '*.apk' -path '*release*' | head -1)
+          echo "release apk: $APK"
+          [ -n "$APK" ] || { echo "::error::No release APK found. Output folder has: $(find android/app/build/outputs | head -20 | tr '\n' ' ')"; exit 1; }
+          "$BT/zipalign" -f 4 "$APK" aligned.apk 2> sign.err || { echo "::error::zipalign failed: $(head -c 500 sign.err)"; exit 1; }
+          PASS=$(cat signing/pass.txt)
+          "$BT/apksigner" sign --ks signing/release.jks --ks-pass "pass:$PASS" --key-pass "pass:$PASS" --out Metro-Nap.apk aligned.apk 2> sign.err || { echo "::error::apksigner failed: $(head -c 500 sign.err)"; exit 1; }
           "$BT/apksigner" verify --verbose Metro-Nap.apk | head -4
           sha256sum Metro-Nap.apk
       - uses: actions/upload-artifact@v4
@@ -350,3 +364,17 @@ jobs:
           name: KEEP-PRIVATE-signing-key
           path: signing
           retention-days: 90
+      - name: Fallback - build a debug APK (runs only if the release build failed)
+        if: ${{ failure() }}
+        working-directory: android
+        run: |
+          echo "::warning::The signed release build failed, so a debug APK is being built instead. You can still install it."
+          ./gradlew assembleDebug --console=plain
+      - name: Upload fallback APK
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: Metro-Nap-DEBUG-APK-fallback
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: ignore
+          
